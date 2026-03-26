@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For You</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* Interactive Canvas Background */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Custom Cursor */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease;
+            z-index: 9999;
+            mix-blend-mode: difference;
+        }
+
+        .cursor.hover {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,107,157,0.2);
+            border-color: #ff6b9d;
+        }
+
+        .cursor-follower {
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: all 0.15s ease;
+            z-index: 9998;
+            mix-blend-mode: difference;
+        }
+
+        /* Cursor Trail Hearts */
+        .heart-trail {
+            position: fixed;
+            font-size: 16px;
+            pointer-events: none;
+            z-index: 9997;
+            animation: heartFade 1s ease-out forwards;
+        }
+
+        @keyframes heartFade {
+            0% { opacity: 1; transform: scale(1) translateY(0); }
+            100% { opacity: 0; transform: scale(0.5) translateY(-30px); }
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 30px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        nav .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        nav .date {
+            font-size: 12px;
+            letter-spacing: 3px;
+            opacity: 0.6;
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 10;
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(60px, 12vw, 180px);
+            font-weight: 700;
+            line-height: 0.9;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #fff, #666);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: all 0.3s ease;
+        }
+
+        .hero p {
+            font-size: 18px;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            opacity: 0.5;
+            font-weight: 300;
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            writing-mode: vertical-rl;
+            font-size: 12px;
+            letter-spacing: 3px;
+            opacity: 0.4;
+        }
+
+        .scroll-indicator::after {
+            content: '';
+            display: block;
+            width: 1px;
+            height: 60px;
+            background: #fff;
+            margin: 20px auto 0;
+            animation: scrollAnim 2s infinite;
+        }
+
+        @keyframes scrollAnim {
+            0%, 100% { opacity: 0; transform: translateY(-20px); }
+            50% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Content Sections */
+        section {
+            min-height: 100vh;
+            padding: 100px 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .content-wrapper {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .section-number {
+            font-size: 14px;
+            letter-spacing: 3px;
+            opacity: 0.3;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(40px, 6vw, 80px);
+            margin-bottom: 40px;
+            line-height: 1.2;
+        }
+
+        .section-text {
+            font-size: 20px;
+            line-height: 1.8;
+            opacity: 0.7;
+            font-weight: 300;
+            max-width: 600px;
+        }
+
+        /* 3D Tilt Cards */
+        .tilt-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 40px;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tilt-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,107,157,0.15), transparent 50%);
+            pointer-events: none;
+        }
+
+        .tilt-card-content {
+            transform: translateZ(30px);
+        }
+
+        .tilt-card h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .tilt-card p {
+            opacity: 0.6;
+            line-height: 1.6;
+        }
+
+        /* Timeline */
+        .timeline {
+            margin-top: 60px;
+        }
+
+        .timeline-item {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+            padding-bottom: 60px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,107,157,0.1), transparent);
+            transition: width 0.5s ease;
+        }
+
+        .timeline-item:hover::before {
+            width: 100%;
+        }
+
+        .timeline-item:hover {
+            transform: translateX(10px);
+            border-bottom-color: rgba(255,107,157,0.5);
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-date {
+            font-size: 14px;
+            letter-spacing: 2px;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-item:hover .timeline-date {
+            opacity: 1;
+            color: #ff6b9d;
+        }
+
+        .timeline-content h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .timeline-content p {
+            opacity: 0.6;
+            line-height: 1.6;
+        }
+
+        /* Interactive Question Section */
+        .question-section {
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        .question-box {
+            background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(192,108,132,0.05));
+            border: 1px solid rgba(255,107,157,0.3);
+            border-radius: 20px;
+            padding: 60px 40px;
+            margin: 30px 0;
+        }
+
+        .question-box h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 36px;
+            margin-bottom: 40px;
+            background: linear-gradient(45deg, #ff6b9d, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .answer-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .answer-btn {
+            padding: 15px 40px;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: #fff;
+            border-radius: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .answer-btn:hover {
+            background: rgba(255,107,157,0.2);
+            border-color: #ff6b9d;
+            transform: translateY(-3px);
+        }
+
+        .answer-btn.correct {
+            background: linear-gradient(45deg, #ff6b9d, #c06c84);
+            border-color: #ff6b9d;
+            animation: correctPulse 0.6s ease;
+        }
+
+        .answer-btn.wrong {
+            background: rgba(255,255,255,0.1);
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes correctPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .reveal-message {
+            display: none;
+            margin-top: 30px;
+            font-size: 24px;
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .reveal-message.show {
+            display: block;
+        }
+
+        /* Slider Section */
+        .slider-section {
+            margin-top: 80px;
+        }
+
+        .slider-container {
+            margin: 40px 0;
+        }
+
+        .slider-label {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .slider-wrapper {
+            position: relative;
+            padding: 40px 0;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(45deg, #ff6b9d, #c06c84);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255,107,157,0.5);
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 30px rgba(255,107,157,0.8);
+        }
+
+        .slider-value {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 48px;
+            font-family: 'Playfair Display', serif;
+            background: linear-gradient(45deg, #ff6b9d, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .slider-response {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 20px;
+            font-style: italic;
+            opacity: 0.7;
+            min-height: 30px;
+        }
+
+        /* Memory Game */
+        .memory-game {
+            margin-top: 80px;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 40px auto;
+            max-width: 500px;
+        }
+
+        .memory-card {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(192,108,132,0.05));
+            border: 2px solid rgba(255,107,157,0.3);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform-style: preserve-3d;
+        }
+
+        .memory-card:hover {
+            transform: scale(1.05);
+        }
+
+        .memory-card.flipped {
+            background: linear-gradient(45deg, #ff6b9d, #c06c84);
+            border-color: #ff6b9d;
+            animation: flipCard 0.6s ease;
+        }
+
+        .memory-card.matched {
+            background: linear-gradient(45deg, #48dbfb, #0abde3);
+            border-color: #48dbfb;
+            animation: matchPulse 0.6s ease;
+        }
+
+        @keyframes flipCard {
+            0% { transform: rotateY(0); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(0); }
+        }
+
+        @keyframes matchPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+            font-size: 18px;
+        }
+
+        .game-stats span {
+            opacity: 0.6;
+        }
+
+        .reset-game {
+            display: block;
+            margin: 30px auto;
+            padding: 12px 30px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: transparent;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .reset-game:hover {
+            background: #ff6b9d;
+            border-color: #ff6b9d;
+        }
+
+        /* Interactive Drawing Canvas */
+        .draw-section {
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        .draw-section h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .draw-section p {
+            opacity: 0.5;
+            margin-bottom: 30px;
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+
+        #drawCanvas {
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            background: rgba(255,255,255,0.02);
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .draw-controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .draw-btn {
+            padding: 12px 30px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: transparent;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .draw-btn:hover {
+            background: #ff6b9d;
+            border-color: #ff6b9d;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .color-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .color-dot:hover, .color-dot.active {
+            border-color: #fff;
+            transform: scale(1.2);
+        }
+
+        /* Letter Grid */
+        .letter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 20px;
+            margin-top: 60px;
+        }
+
+        .letter-box {
+            aspect-ratio: 1;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .letter-box::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #ff6b9d, #c06c84);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .letter-box:hover::before {
+            transform: translateY(0);
+        }
+
+        .letter-box span {
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        .letter-box:hover span {
+            transform: scale(1.2) rotate(5deg);
+        }
+
+        .letter-box.revealed {
+            background: linear-gradient(45deg, #ff6b9d, #c06c84);
+            border-color: #ff6b9d;
+            animation: letterReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes letterReveal {
+            0% { transform: scale(0.8) rotateY(0); }
+            50% { transform: scale(1.1) rotateY(180deg); }
+            100% { transform: scale(1) rotateY(360deg); }
+        }
+
+        /* Secret Box */
+        .secret-box {
+            margin-top: 60px;
+            padding: 60px;
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .secret-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: all 0.5s ease;
+        }
+
+        .secret-box:hover::before {
+            left: 100%;
+        }
+
+        .secret-box:hover {
+            border-color: #ff6b9d;
+            transform: scale(1.02);
+        }
+
+        .lock-icon {
+            font-size: 40px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .secret-box:hover .lock-icon {
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        .secret-hint {
+            font-size: 14px;
+            letter-spacing: 3px;
+            opacity: 0.5;
+            text-transform: uppercase;
+        }
+
+        .secret-content {
+            display: none;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .secret-content.revealed {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .secret-content h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 48px;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ff6b9d, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Typewriter Effect */
+        .typewriter {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-style: italic;
+            opacity: 0.8;
+            min-height: 80px;
+        }
+
+        .typewriter .cursor-blink {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Final Section */
+        .final-section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .final-message {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(50px, 8vw, 120px);
+            line-height: 1.1;
+            font-style: italic;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 1s ease;
+        }
+
+        .final-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Surprise Background Animation */
+        .surprise-active {
+            animation: colorShift 3s ease infinite;
+        }
+
+        @keyframes colorShift {
+            0%, 100% { background: #0a0a0a; }
+            50% { background: #1a0a15; }
+        }
+
+        /* Grain Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                cursor: auto;
+            }
+
+            .cursor, .cursor-follower {
+                display: none;
+            }
+
+            nav, section {
+                padding: 30px;
+            }
+            
+            .timeline-item {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .hero p {
+                letter-spacing: 4px;
+                font-size: 14px;
+            }
+
+            .letter-grid {
+                grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+                gap: 10px;
+            }
+
+            #drawCanvas {
+                width: 100% !important;
+                height: 300px !important;
+            }
+
+            .game-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+            }
+
+            .answer-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particle Canvas Background -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Custom Cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">US</div>
+        <div class="date">TODAY'S DATE</div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 id="heroTitle">You & Me</h1>
+            <p>Our Story</p>
+        </div>
+        <div class="scroll-indicator">SCROLL</div>
+    </section>
+
+    <!-- Section 1 -->
+    <section>
+        <div class="content-wrapper">
+            <div class="section-number">01</div>
+            <h2 class="section-title">The Beginning</h2>
+            <p class="section-text">
+                There are moments in life that change everything. Meeting you was mine. 
+                What started as a simple conversation became the foundation of something extraordinary.
+            </p>
+
+            <!-- 3D Tilt Card -->
+            <div class="tilt-card">
+                <div class="tilt-card-content">
+                    <h3>✨ Our First Moment</h3>
+                    <p>Move your cursor around this card and watch the magic happen. Just like you brought magic into my life.</p>
+                </div>
+            </div>
+
+            <!-- Interactive Letter Grid -->
+            <div class="letter-grid">
+                <div class="letter-box" data-letter="I"><span>?</span></div>
+                <div class="letter-box" data-letter="L"><span>?</span></div>
+                <div class="letter-box" data-letter="O"><span>?</span></div>
+                <div class="letter-box" data-letter="V"><span>?</span></div>
+                <div class="letter-box" data-letter="E"><span>?</span></div>
+                <div class="letter-box" data-letter="Y"><span>?</span></div>
+                <div class="letter-box" data-letter="O"><span>?</span></div>
+                <div class="letter-box" data-letter="U"><span>?</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2 - Timeline -->
+    <section>
+        <div class="content-wrapper">
+            <div class="section-number">02</div>
+            <h2 class="section-title">Our Journey</h2>
+            
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-date">FIRST MEET</div>
+                    <div class="timeline-content">
+                        <h3>The Day Everything Changed</h3>
+                        <p>I still remember every detail of that day. Your smile, your laugh, the way time seemed to stop.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">FIRST DATE</div>
+                    <div class="timeline-content">
+                        <h3>Coffee & Conversations</h3>
+                        <p>Hours felt like minutes. We talked about everything and nothing, and I knew I wanted more of these moments.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">TODAY</div>
+                    <div class="timeline-content">
+                        <h3>Still Falling</h3>
+                        <p>Every day with you is a reminder of how lucky I am. This is just the beginning of our story.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secret Box -->
+            <div class="secret-box" id="secretBox">
+                <div class="lock-icon">🔒</div>
+                <div class="secret-hint">Click to unlock a special message</div>
+                <div class="secret-content" id="secretContent">
+                    <h3>For Your Eyes Only</h3>
+                    <p>You make ordinary moments feel extraordinary. You turn my bad days into good ones just by being there. You're my favorite notification, my favorite hello, my favorite everything.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEW: Interactive Question Section -->
+    <section>
+        <div class="content-wrapper">
+            <div class="section-number">03</div>
+            <h2 class="section-title">Quick Question</h2>
+            
+            <div class="question-section">
+                <div class="question-box">
+                    <h3>What do you think about us? 💕</h3>
+                    <div class="answer-buttons">
+                        <button class="answer-btn" data-answer="wrong">We're okay</button>
+                        <button class="answer-btn" data-answer="wrong">We're good</button>
+                        <button class="answer-btn" data-answer="correct">We're perfect together ❤️</button>
+                    </div>
+                    <div class="reveal-message" id="questionReveal">
+                        Exactly! We're absolutely perfect together! 🌟
+                    </div>
+                </div>
+
+                <!-- Slider Section -->
+                <div class="slider-section">
+                    <div class="slider-container">
+                        <div class="slider-label">How much do I love you?</div>
+                        <div class="slider-wrapper">
+                            <input type="range" min="0" max="100" value="100" id="loveSlider">
+                        </div>
+                        <div class="slider-value" id="sliderValue">100%</div>
+                        <div class="slider-response" id="sliderResponse">To infinity and beyond! 🚀</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEW: Memory Game Section -->
+    <section>
+        <div class="content-wrapper">
+            <div class="section-number">04</div>
+            <h2 class="section-title">Memory Game</h2>
+            <p class="section-text" style="text-align: center; max-width: 100%;">
+                Match the pairs! Find all the hearts and emojis that represent us ❤️
+            </p>
+
+            <div class="memory-game">
+                <div class="game-grid" id="gameGrid">
+                    <!-- Cards will be generated by JavaScript -->
+                </div>
+                <div class="game-stats">
+                    <div>Moves: <span id="moveCount">0</span></div>
+                    <div>Matches: <span id="matchCount">0</span></div>
+                </div>
+                <button class="reset-game" id="resetGame">RESET GAME</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section - Drawing -->
+    <section>
+        <div class="content-wrapper">
+            <div class="section-number">05</div>
+            <h2 class="section-title">Draw For Me</h2>
+            <p class="section-text">Draw something special. A heart, our initials, or anything that reminds you of us.</p>
+
+            <div class="draw-section">
+                <canvas id="drawCanvas" width="600" height="400"></canvas>
+                <div class="color-picker">
+                    <div class="color-dot active" style="background: #ff6b9d;" data-color="#ff6b9d"></div>
+                    <div class="color-dot" style="background: #feca57;" data-color="#feca57"></div>
+                    <div class="color-dot" style="background: #48dbfb;" data-color="#48dbfb"></div>
+                    <div class="color-dot" style="background: #ff9ff3;" data-color="#ff9ff3"></div>
+                    <div class="color-dot" style="background: #ffffff;" data-color="#ffffff"></div>
+                </div>
+                <div class="draw-controls">
+                    <button class="draw-btn" id="clearCanvas">CLEAR</button>
+                    <button class="draw-btn" id="saveCanvas">SAVE ❤️</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section - Typewriter -->
+    <section>
+        <div class="content-wrapper">
+            <div class="section-number">06</div>
+            <h2 class="section-title">What You Mean To Me</h2>
+            
+            <!-- Typewriter Effect -->
+            <div class="typewriter" id="typewriter"></div>
+        </div>
+    </section>
+
+    <!-- Final Section -->
+    <section class="final-section">
+        <div class="final-message" id="finalMessage">
+            "I choose you.<br>
+            Today, tomorrow,<br>
+            always."
+        </div>
+    </section>
+
+    <script>
+        // =====================
+        // PARTICLE BACKGROUND
+        // =====================
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let mousePos = { x: 0, y: 0 };
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = Math.random() * 0.5 - 0.25;
+                this.speedY = Math.random() * 0.5 - 0.25;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+
+            update() {
+                const dx = mousePos.x - this.x;
+                const dy = mousePos.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 150) {
+                    const force = (150 - dist) / 150;
+                    this.x += dx * force * 0.02;
+                    this.y += dy * force * 0.02;
+                }
+
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 107, 157, ${this.opacity})`;
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 80; i++) {
+            particles.push(new Particle());
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach((p1, i) => {
+                particles.slice(i + 1).forEach(p2 => {
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(255, 107, 157, ${0.1 * (1 - dist / 120)})`;
+                        ctx.stroke();
+                    }
+                });
+            });
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // =====================
+        // CUSTOM CURSOR
+        // =====================
+        const cursor = document.querySelector('.cursor');
+        const cursorFollower = document.querySelector('.cursor-follower');
+        let followerX = 0, followerY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mousePos.x = e.clientX;
+            mousePos.y = e.clientY;
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        function animateFollower() {
+            followerX += (mousePos.x - followerX) * 0.1;
+            followerY += (mousePos.y - followerY) * 0.1;
+            cursorFollower.style.left = followerX + 'px';
+            cursorFollower.style.top = followerY + 'px';
+            requestAnimationFrame(animateFollower);
+        }
+        animateFollower();
+
+        document.querySelectorAll('a, button, .letter-box, .timeline-item, .secret-box, .tilt-card, .answer-btn, .memory-card').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+
+        document.addEventListener('click', (e) => {
+            createHeartTrail(e.clientX, e.clientY);
+        });
+
+        function createHeartTrail(x, y) {
+            const hearts = ['❤️', '💕', '💖', '💗'];
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart-trail';
+                    heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+                    heart.style.left = (x + (Math.random() - 0.5) * 40) + 'px';
+                    heart.style.top = (y + (Math.random() - 0.5) * 40) + 'px';
+                    document.body.appendChild(heart);
+                    setTimeout(() => heart.remove(), 1000);
+                }, i * 50);
+            }
+        }
+
+        // =====================
+        // UPDATE DATE
+        // =====================
+        const dateElement = document.querySelector('.date');
+        const today = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        dateElement.textContent = today.toLocaleDateString('en-US', options).toUpperCase();
+
+        // =====================
+        // 3D TILT CARD
+        // =====================
+        const tiltCard = document.querySelector('.tilt-card');
+        
+        tiltCard.addEventListener('mousemove', (e) => {
+            const rect = tiltCard.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = (y - centerY) / 10;
+            const rotateY = (centerX - x) / 10;
+            
+            tiltCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            tiltCard.style.setProperty('--mouse-x', (x / rect.width * 100) + '%');
+            tiltCard.style.setProperty('--mouse-y', (y / rect.height * 100) + '%');
+        });
+
+        tiltCard.addEventListener('mouseleave', () => {
+            tiltCard.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+        });
+
+        // =====================
+        // LETTER GRID
+        // =====================
+        const letterBoxes = document.querySelectorAll('.letter-box');
+        let revealedCount = 0;
+
+        letterBoxes.forEach((box) => {
+            box.addEventListener('click', function() {
+                if (!this.classList.contains('revealed')) {
+                    this.classList.add('revealed');
+                    this.querySelector('span').textContent = this.dataset.letter;
+                    revealedCount++;
+                    
+                    if (revealedCount === letterBoxes.length) {
+                        celebrateMessage();
+                    }
+                }
+            });
+        });
+
+        function celebrateMessage() {
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart-trail';
+                    heart.textContent = ['❤️', '💕', '💖', '✨'][Math.floor(Math.random() * 4)];
+                    heart.style.left = Math.random() * window.innerWidth + 'px';
+                    heart.style.top = Math.random() * window.innerHeight + 'px';
+                    heart.style.fontSize = '30px';
+                    document.body.appendChild(heart);
+                    setTimeout(() => heart.remove(), 1000);
+                }, i * 50);
+            }
+        }
+
+        // =====================
+        // SECRET BOX
+        // =====================
+        let secretRevealed = false;
+        document.getElementById('secretBox').addEventListener('click', function() {
+            if (!secretRevealed) {
+                document.getElementById('secretContent').classList.add('revealed');
+                document.querySelector('.lock-icon').textContent = '🔓';
+                document.querySelector('.secret-hint').style.display = 'none';
+                secretRevealed = true;
+                createHeartTrail(window.innerWidth / 2, window.innerHeight / 2);
+            }
+        });
+
+        // =====================
+        // INTERACTIVE QUESTION
+        // =====================
+        const answerButtons = document.querySelectorAll('.answer-btn');
+        let questionAnswered = false;
+
+        answerButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (questionAnswered) return;
+                
+                const isCorrect = this.dataset.answer === 'correct';
+                
+                if (isCorrect) {
+                    this.classList.add('correct');
+                    document.getElementById('questionReveal').classList.add('show');
+                    questionAnswered = true;
+                    
+                    // Celebration
+                    for (let i = 0; i < 20; i++) {
+                        setTimeout(() => {
+                            const heart = document.createElement('div');
+                            heart.className = 'heart-trail';
+                            heart.textContent = ['❤️', '💕', '💖', '💗', '✨'][Math.floor(Math.random() * 5)];
+                            heart.style.left = Math.random() * window.innerWidth + 'px';
+                            heart.style.top = Math.random() * window.innerHeight + 'px';
+                            heart.style.fontSize = '25px';
+                            document.body.appendChild(heart);
+                            setTimeout(() => heart.remove(), 1000);
+                        }, i * 50);
+                    }
+                } else {
+                    this.classList.add('wrong');
+                    setTimeout(() => this.classList.remove('wrong'), 500);
+                }
+            });
+        });
+
+        // =====================
+        // LOVE SLIDER
+        // =====================
+        const loveSlider = document.getElementById('loveSlider');
+        const sliderValue = document.getElementById('sliderValue');
+        const sliderResponse = document.getElementById('sliderResponse');
+
+        const responses = [
+            { min: 0, max: 20, text: "Come on, you can do better! 😊" },
+            { min: 21, max: 40, text: "Getting warmer... ☺️" },
+            { min: 41, max: 60, text: "Almost there! 💕" },
+            { min: 61, max: 80, text: "Now we're talking! ❤️" },
+            { min: 81, max: 99, text: "So close to perfect! 💖" },
+            { min: 100, max: 100, text: "To infinity and beyond! 🚀" }
+        ];
+
+        loveSlider.addEventListener('input', function() {
+            const value = this.value;
+            sliderValue.textContent = value + '%';
+            
+            const response = responses.find(r => value >= r.min && value <= r.max);
+            sliderResponse.textContent = response.text;
+            
+            if (value == 100) {
+                sliderResponse.style.color = '#ff6b9d';
+                sliderResponse.style.transform = 'scale(1.1)';
+            } else {
+                sliderResponse.style.color = '';
+                sliderResponse.style.transform = 'scale(1)';
+            }
+        });
+
+        // =====================
+        // MEMORY GAME
+        // =====================
+        const emojis = ['❤️', '💕', '💖', '💗', '✨', '🌟', '💝', '💘'];
+        let gameCards = [...emojis, ...emojis];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moveCount = 0;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function initGame() {
+            gameCards = shuffleArray([...emojis, ...emojis]);
+            const gameGrid = document.getElementById('gameGrid');
+            gameGrid.innerHTML = '';
+            flippedCards = [];
+            matchedPairs = 0;
+            moveCount = 0;
+            document.getElementById('moveCount').textContent = '0';
+            document.getElementById('matchCount').textContent = '0';
+
+            gameCards.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.className = 'memory-card';
+                card.dataset.emoji = emoji;
+                card.dataset.index = index;
+                card.innerHTML = '?';
+                card.addEventListener('click', flipCard);
+                gameGrid.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (flippedCards.length === 2) return;
+            if (this.classList.contains('flipped') || this.classList.contains('matched')) return;
+
+            this.classList.add('flipped');
+            this.innerHTML = this.dataset.emoji;
+            flippedCards.push(this);
+
+            if (flippedCards.length === 2) {
+                moveCount++;
+                document.getElementById('moveCount').textContent = moveCount;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            
+            if (card1.dataset.emoji === card2.dataset.emoji) {
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                matchedPairs++;
+                document.getElementById('matchCount').textContent = matchedPairs;
+                flippedCards = [];
+
+                if (matchedPairs === emojis.length) {
+                    setTimeout(() => {
+                        alert('🎉 You won! You matched all pairs! 🎉');
+                        celebrateWin();
+                    }, 500);
+                }
+            } else {
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    card1.innerHTML = '?';
+                    card2.innerHTML = '?';
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        function celebrateWin() {
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart-trail';
+                    heart.textContent = ['❤️', '💕', '💖', '💗', '✨', '🌟'][Math.floor(Math.random() * 6)];
+                    heart.style.left = Math.random() * window.innerWidth + 'px';
+                    heart.style.top = Math.random() * window.innerHeight + 'px';
+                    heart.style.fontSize = (20 + Math.random() * 20) + 'px';
+                    document.body.appendChild(heart);
+                    setTimeout(() => heart.remove(), 1000);
+                }, i * 40);
+            }
+        }
+
+        document.getElementById('resetGame').addEventListener('click', initGame);
+        initGame();
+
+        // =====================
+        // DRAWING CANVAS
+        // =====================
+        const drawCanvas = document.getElementById('drawCanvas');
+        const drawCtx = drawCanvas.getContext('2d');
+        let isDrawing = false;
+        let currentColor = '#ff6b9d';
+
+        drawCtx.lineCap = 'round';
+        drawCtx.lineJoin = 'round';
+        drawCtx.lineWidth = 4;
+
+        function getPos(e) {
+            const rect = drawCanvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            return { x: x * (drawCanvas.width / rect.width), y: y * (drawCanvas.height / rect.height) };
+        }
+
+        drawCanvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const pos = getPos(e);
+            drawCtx.beginPath();
+            drawCtx.moveTo(pos.x, pos.y);
+        });
+
+        drawCanvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            drawCtx.strokeStyle = currentColor;
+            drawCtx.lineTo(pos.x, pos.y);
+            drawCtx.stroke();
+        });
+
+        drawCanvas.addEventListener('mouseup', () => isDrawing = false);
+        drawCanvas.addEventListener('mouseleave', () => isDrawing = false);
+
+        drawCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDrawing = true;
+            const pos = getPos(e);
+            drawCtx.beginPath();
+            drawCtx.moveTo(pos.x, pos.y);
+        });
+
+        drawCanvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            drawCtx.strokeStyle = currentColor;
+            drawCtx.lineTo(pos.x, pos.y);
+            drawCtx.stroke();
+        });
+
+        drawCanvas.addEventListener('touchend', () => isDrawing = false);
+
+        document.querySelectorAll('.color-dot').forEach(dot => {
+            dot.addEventListener('click', function() {
+                document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                this.classList.add('active');
+                currentColor = this.dataset.color;
+            });
+        });
+
+        document.getElementById('clearCanvas').addEventListener('click', () => {
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        });
+
+        document.getElementById('saveCanvas').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'our-drawing.png';
+            link.href = drawCanvas.toDataURL();
+            link.click();
+            createHeartTrail(window.innerWidth / 2, window.innerHeight / 2);
+        });
+
+        // =====================
+        // TYPEWRITER EFFECT
+        // =====================
+        const typewriterText = [
+            "You're my favorite hello...",
+            "And my hardest goodbye.",
+            "You're my today...",
+            "And all of my tomorrows.",
+            "You're my best friend...",
+            "My soulmate...",
+            "My everything. ❤️"
+        ];
+
+        const typewriter = document.getElementById('typewriter');
+        let textIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        let typewriterStarted = false;
+
+        function typeWrite() {
+            const currentText = typewriterText[textIndex];
+            
+            if (isDeleting) {
+                typewriter.innerHTML = currentText.substring(0, charIndex - 1) + '<span class="cursor-blink">|</span>';
+                charIndex--;
+            } else {
+                typewriter.innerHTML = currentText.substring(0, charIndex + 1) + '<span class="cursor-blink">|</span>';
+                charIndex++;
+            }
+
+            let typeSpeed = isDeleting ? 30 : 80;
+
+            if (!isDeleting && charIndex === currentText.length) {
+                typeSpeed = 2000;
+                isDeleting = true;
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                textIndex = (textIndex + 1) % typewriterText.length;
+                typeSpeed = 500;
+            }
+
+            setTimeout(typeWrite, typeSpeed);
+        }
+
+        const typewriterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !typewriterStarted) {
+                    typewriterStarted = true;
+                    typeWrite();
+                }
+            });
+        }, { threshold: 0.5 });
+
+        typewriterObserver.observe(typewriter);
+
+        // =====================
+        // PARALLAX & FINAL MESSAGE
+        // =====================
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const hero = document.querySelector('.hero-content');
+            
+            if (hero) {
+                hero.style.transform = `translateY(${scrolled * 0.5}px)`;
+                hero.style.opacity = 1 - (scrolled / 700);
+            }
+
+            const finalMessage = document.getElementById('finalMessage');
+            const finalSection = document.querySelector('.final-section');
+            if (finalSection) {
+                const rect = finalSection.getBoundingClientRect();
+                if (rect.top < window.innerHeight * 0.7) {
+                    finalMessage.classList.add('visible');
+                }
+            }
+        });
+
+        // =====================
+        // KONAMI CODE
+        // =====================
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
+        let konamiIndex = 0;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    activateKonamiSurprise();
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
+            }
+        });
+
+        function activateKonamiSurprise() {
+            document.body.classList.add('surprise-active');
+            
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart-trail';
+                    heart.textContent = ['❤️', '💕', '💖', '💗', '✨', '🌟'][Math.floor(Math.random() * 6)];
+                    heart.style.left = Math.random() * window.innerWidth + 'px';
+                    heart.style.top = Math.random() * window.innerHeight + 'px';
+                    heart.style.fontSize = (20 + Math.random() * 30) + 'px';
+                    heart.style.animationDuration = (1 + Math.random()) + 's';
+                    document.body.appendChild(heart);
+                    setTimeout(() => heart.remove(), 2000);
+                }, i * 30);
+            }
+
+            document.getElementById('heroTitle').innerHTML = 'I Love You';
+            document.getElementById('heroTitle').style.background = 'linear-gradient(45deg, #ff6b9d, #feca57, #48dbfb)';
+            document.getElementById('heroTitle').style.webkitBackgroundClip = 'text';
+            
+            setTimeout(() => {
+                document.body.classList.remove('surprise-active');
+            }, 5000);
+        }
+
+        // =====================
+        // HERO TITLE
+        // =====================
+        const heroTitle = document.getElementById('heroTitle');
+        
+        heroTitle.addEventListener('click', function() {
+            this.style.background = 'linear-gradient(45deg, #ff6b9d, #feca57, #48dbfb)';
+            this.style.webkitBackgroundClip = 'text';
+            this.style.webkitTextFillColor = 'transparent';
+            
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart-trail';
+                    heart.textContent = ['❤️', '💕', '💖', '💗'][Math.floor(Math.random() * 4)];
+                    heart.style.left = (window.innerWidth / 2 + (Math.random() - 0.5) * 300) + 'px';
+                    heart.style.top = (window.innerHeight / 2 + (Math.random() - 0.5) * 200) + 'px';
+                    heart.style.fontSize = '25px';
+                    document.body.appendChild(heart);
+                    setTimeout(() => heart.remove(), 1000);
+                }, i * 80);
+            }
+        });
+    </script>
+</body>
+</html>
